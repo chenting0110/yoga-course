@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOGA.FLOW - 找回身心平靜</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* 自定義滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons Components (SVG Paths) ---
+        const Icon = ({ children, className, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className} 
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const Icons = {
+            Menu: (props) => <Icon {...props}><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></Icon>,
+            X: (props) => <Icon {...props}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>,
+            ChevronDown: (props) => <Icon {...props}><polyline points="6 9 12 15 18 9"></polyline></Icon>,
+            ChevronUp: (props) => <Icon {...props}><polyline points="18 15 12 9 6 15"></polyline></Icon>,
+            Play: (props) => <Icon {...props} fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></Icon>,
+            Check: (props) => <Icon {...props}><polyline points="20 6 9 17 4 12"></polyline></Icon>,
+            Star: (props) => <Icon {...props} fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></Icon>,
+            Clock: (props) => <Icon {...props}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></Icon>,
+            ShieldCheck: (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></Icon>,
+            Heart: (props) => <Icon {...props}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></Icon>,
+            Users: (props) => <Icon {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>,
+            Instagram: (props) => <Icon {...props}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></Icon>,
+            Facebook: (props) => <Icon {...props}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></Icon>,
+            Mail: (props) => <Icon {...props}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></Icon>
+        };
+
+        const YogaLandingPage = () => {
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeAccordion, setActiveAccordion] = useState(null);
+
+            const toggleAccordion = (index) => {
+                setActiveAccordion(activeAccordion === index ? null : index);
+            };
+
+            const scrollToSection = (id) => {
+                setIsMenuOpen(false);
+                const element = document.getElementById(id);
+                if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+
+            const features = [
+                {
+                icon: <Icons.Clock className="w-8 h-8 text-emerald-600" />,
+                title: "每日 20 分鐘",
+                desc: "專為忙碌生活設計，利用零碎時間即可完成練習。"
+                },
+                {
+                icon: <Icons.ShieldCheck className="w-8 h-8 text-emerald-600" />,
+                title: "零基礎友善",
+                desc: "詳細的動作拆解與替代式，身體僵硬也能安心練。"
+                },
+                {
+                icon: <Icons.Heart className="w-8 h-8 text-emerald-600" />,
+                title: "身心靈平衡",
+                desc: "結合呼吸法與冥想，不只練線條，更練內心的平靜。"
+                },
+                {
+                icon: <Icons.Users className="w-8 h-8 text-emerald-600" />,
+                title: "專屬社群陪練",
+                desc: "加入學員專屬群組，老師親自解答，練習不孤單。"
+                }
+            ];
+
+            const curriculum = [
+                {
+                week: "Week 1",
+                title: "喚醒身體：基礎呼吸與正位",
+                lessons: ["腹式呼吸法詳解", "脊椎流動熱身序列", "拜日式A分解動作", "睡前放鬆引導"]
+                },
+                {
+                week: "Week 2",
+                title: "釋放緊繃：開肩與開髖",
+                lessons: ["改善圓肩駝背", "久坐族必備：髖部伸展", "釋放腰背壓力", "辦公室椅子瑜珈"]
+                },
+                {
+                week: "Week 3",
+                title: "建立力量：核心與平衡",
+                lessons: ["啟動核心肌群", "樹式與平衡練習", "戰士序列流動", "增強腿部力量"]
+                },
+                {
+                week: "Week 4",
+                title: "整合流動：全身性修復",
+                lessons: ["全身流動瑜珈 (Vinyasa)", "陰瑜珈深層修復", "慈悲觀冥想", "建立自我練習菜單"]
+                }
+            ];
+
+            const testimonials = [
+                { 
+                name: "小美", 
+                role: "行銷企劃", 
+                image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+                text: "以前覺得瑜珈很難，但 Emma 老師的引導非常清楚！現在我不只肩膀鬆了很多，晚上也更容易入睡了。" 
+                },
+                { 
+                name: "Jason", 
+                role: "軟體工程師", 
+                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+                text: "每天 20 分鐘對我這種大忙人真的太友善了。這是我唯一能堅持下來的運動課程！" 
+                },
+                { 
+                name: "雅婷", 
+                role: "全職媽媽", 
+                image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+                text: "即使在家帶小孩也能抽空練習，讓我找回了屬於自己的平靜時光。非常推薦！" 
+                }
+            ];
+
+            const faqs = [
+                {
+                q: "我身體非常僵硬，手指碰不到地板，可以上這堂課嗎？",
+                a: "當然可以！這堂課專為初學者設計。我們會教您如何使用瑜珈磚或居家用品（如書本、毛巾）輔助。瑜珈是為了讓身體變柔軟，而不是柔軟的人才能做瑜珈。"
+                },
+                {
+                q: "購買後有觀看期限嗎？",
+                a: "完全沒有！購買後您擁有「永久觀看權限」。您可以依照自己的步調，隨時隨地重複練習，不用擔心跟不上進度。"
+                },
+                {
+                q: "需要準備什麼器材？",
+                a: "只需一張瑜珈墊即可開始！如果有瑜珈磚和瑜珈繩會更好，但沒有也沒關係，我們會教您使用家裡的抱枕或皮帶來替代。"
+                },
+                {
+                q: "如果不滿意可以退費嗎？",
+                a: "我們提供 7 天滿意保證。如果您在購買後 7 天內覺得課程不適合您，請聯繫客服，我們將無條件全額退費。"
+                }
+            ];
+
+            return (
+                <div className="font-sans text-stone-700 bg-stone-50">
+                
+                {/* Navigation */}
+                <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 shadow-sm">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
+                        <span className="text-2xl font-bold text-emerald-700 tracking-wider">YOGA.FLOW</span>
+                        </div>
+                        
+                        {/* Desktop Menu */}
+                        <div className="hidden md:flex items-center space-x-8">
+                        <button onClick={() => scrollToSection('features')} className="text-stone-600 hover:text-emerald-600 transition">課程特色</button>
+                        <button onClick={() => scrollToSection('curriculum')} className="text-stone-600 hover:text-emerald-600 transition">課程大綱</button>
+                        <button onClick={() => scrollToSection('testimonials')} className="text-stone-600 hover:text-emerald-600 transition">學員見證</button>
+                        <button onClick={() => scrollToSection('pricing')} className="bg-emerald-600 text-white px-5 py-2 rounded-full hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
+                            立即報名
+                        </button>
+                        </div>
+
+                        {/* Mobile Menu Button */}
+                        <div className="md:hidden flex items-center">
+                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-stone-600">
+                            {isMenuOpen ? <Icons.X size={28} /> : <Icons.Menu size={28} />}
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Mobile Menu Dropdown */}
+                    {isMenuOpen && (
+                    <div className="md:hidden bg-white border-t absolute w-full">
+                        <div className="px-4 pt-2 pb-6 space-y-2 text-center">
+                        <button onClick={() => scrollToSection('features')} className="block w-full py-3 text-stone-600">課程特色</button>
+                        <button onClick={() => scrollToSection('curriculum')} className="block w-full py-3 text-stone-600">課程大綱</button>
+                        <button onClick={() => scrollToSection('testimonials')} className="block w-full py-3 text-stone-600">學員見證</button>
+                        <button onClick={() => scrollToSection('pricing')} className="block w-full py-3 text-emerald-600 font-bold">立即報名</button>
+                        </div>
+                    </div>
+                    )}
+                </nav>
+
+                {/* Hero Section */}
+                <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
+                    <div className="absolute inset-0 z-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1552196563-55cd4e45efb3?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center"></div>
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+                        <div className="text-center lg:text-left mb-12 lg:mb-0">
+                        <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-sm font-semibold tracking-wide mb-6">
+                            ✨ 累計超過 2,000 名學員加入
+                        </span>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-stone-800 leading-tight mb-6">
+                            找回身體的柔軟<br />
+                            <span className="text-emerald-600">與內心的平靜</span>
+                        </h1>
+                        <p className="text-lg text-stone-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                            專為現代忙碌生活設計的 30 天線上瑜珈旅程。
+                            告別肩頸痠痛，改善睡眠品質，即使是「超硬」初學者也能輕鬆上手。
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                            <button onClick={() => scrollToSection('pricing')} className="px-8 py-4 bg-emerald-600 text-white rounded-full text-lg font-semibold hover:bg-emerald-700 transition shadow-xl shadow-emerald-200 flex items-center justify-center gap-2">
+                            <Icons.Play size={20} />
+                            開始我的旅程
+                            </button>
+                            <button onClick={() => scrollToSection('curriculum')} className="px-8 py-4 bg-white text-stone-700 border border-stone-200 rounded-full text-lg font-semibold hover:bg-stone-50 transition">
+                            查看課程大綱
+                            </button>
+                        </div>
+                        <div className="mt-8 flex items-center justify-center lg:justify-start gap-4 text-sm text-stone-500">
+                            <div className="flex items-center gap-1"><Icons.Check size={16} className="text-emerald-600" /> 永久觀看</div>
+                            <div className="flex items-center gap-1"><Icons.Check size={16} className="text-emerald-600" /> 30 天滿意保證</div>
+                        </div>
+                        </div>
+                        <div className="relative">
+                        <div className="relative rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.01] transition duration-500 border-4 border-white">
+                            <img src="https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Yoga Practice at Home" className="w-full h-auto object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-8">
+                                <div className="text-white">
+                                    <p className="font-medium text-lg">導師：Emma Lin</p>
+                                    <p className="text-sm opacity-90">RYT-500 認證瑜珈導師</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="absolute -z-10 top-10 -right-10 w-64 h-64 bg-emerald-200 rounded-full blur-3xl opacity-30"></div>
+                        <div className="absolute -z-10 -bottom-10 -left-10 w-64 h-64 bg-amber-200 rounded-full blur-3xl opacity-30"></div>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Problem Section */}
+                <section className="py-20 bg-white">
+                    <div className="max-w-4xl mx-auto px-4 text-center">
+                    <h2 className="text-3xl font-bold text-stone-800 mb-12">你是否也面臨這些困擾？</h2>
+                    <div className="grid md:grid-cols-3 gap-8">
+                        <div className="p-6 bg-stone-50 rounded-2xl">
+                        <div className="text-4xl mb-4">😫</div>
+                        <h3 className="text-xl font-bold mb-2">肩頸僵硬背痛</h3>
+                        <p className="text-stone-600">長時間久坐辦公，感覺身體像生鏽一樣，按摩也無法根治。</p>
+                        </div>
+                        <div className="p-6 bg-stone-50 rounded-2xl">
+                        <div className="text-4xl mb-4">😴</div>
+                        <h3 className="text-xl font-bold mb-2">睡眠品質不佳</h3>
+                        <p className="text-stone-600">躺在床上腦袋轉個不停，翻來覆去難以入睡，起床還是很累。</p>
+                        </div>
+                        <div className="p-6 bg-stone-50 rounded-2xl">
+                        <div className="text-4xl mb-4">🕰️</div>
+                        <h3 className="text-xl font-bold mb-2">想動卻沒時間</h3>
+                        <p className="text-stone-600">辦了健身房會員卻懶得出門，生活忙碌抽不出完整的運動時間。</p>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Features Section */}
+                <section id="features" className="py-20 bg-emerald-50/50">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl font-bold text-stone-800 mb-4">為什麼選擇這堂課程？</h2>
+                        <p className="text-stone-600 max-w-2xl mx-auto">這不是一堂追求高難度體式的特技課，而是一段療癒身心的旅程。</p>
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {features.map((feature, index) => (
+                        <div key={index} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition duration-300 border border-emerald-100">
+                            <div className="mb-6 bg-emerald-50 w-16 h-16 rounded-full flex items-center justify-center">
+                            {feature.icon}
+                            </div>
+                            <h3 className="text-xl font-bold text-stone-800 mb-3">{feature.title}</h3>
+                            <p className="text-stone-600 leading-relaxed">{feature.desc}</p>
+                        </div>
+                        ))}
+                    </div>
+                    </div>
+                </section>
+
+                {/* Curriculum Section */}
+                <section id="curriculum" className="py-20 bg-white">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl font-bold text-stone-800 mb-4">30 天課程規劃</h2>
+                        <p className="text-stone-600">循序漸進的系統化教學，帶你從基礎呼吸到全身流動。</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        {curriculum.map((item, index) => (
+                        <div key={index} className="border border-stone-200 rounded-xl overflow-hidden hover:border-emerald-300 transition duration-300">
+                            <button 
+                            onClick={() => toggleAccordion(index)}
+                            className={`w-full flex items-center justify-between p-6 text-left transition-colors ${activeAccordion === index ? 'bg-emerald-50' : 'bg-white'}`}
+                            >
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">{item.week}</span>
+                                <h3 className="text-lg md:text-xl font-bold text-stone-800">{item.title}</h3>
+                            </div>
+                            {activeAccordion === index ? <Icons.ChevronUp className="text-stone-400" /> : <Icons.ChevronDown className="text-stone-400" />}
+                            </button>
+                            
+                            {activeAccordion === index && (
+                            <div className="bg-stone-50 px-6 py-6 border-t border-stone-100">
+                                <ul className="grid sm:grid-cols-2 gap-4">
+                                {item.lessons.map((lesson, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-stone-600">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                    {lesson}
+                                    </li>
+                                ))}
+                                </ul>
+                            </div>
+                            )}
+                        </div>
+                        ))}
+                    </div>
+                    </div>
+                </section>
+
+                {/* Instructor Section */}
+                <section className="py-20 bg-stone-900 text-white overflow-hidden">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="lg:flex items-center gap-16">
+                        <div className="lg:w-1/2 mb-10 lg:mb-0 relative">
+                        <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border-4 border-stone-800">
+                            <img src="https://images.unsplash.com/photo-1575052814088-613568d9028d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Yoga Instructor Emma" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="absolute -bottom-6 -right-6 bg-white text-stone-900 p-6 rounded-xl shadow-lg hidden md:block">
+                            <p className="font-bold text-3xl text-emerald-600">10+</p>
+                            <p className="text-sm font-semibold">年教學經驗</p>
+                        </div>
+                        </div>
+                        <div className="lg:w-1/2">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-6">嗨，我是 Emma</h2>
+                        <h3 className="text-xl text-emerald-400 mb-6 font-medium">RYT-500 國際認證資深瑜珈導師</h3>
+                        <div className="space-y-6 text-stone-300 leading-relaxed text-lg">
+                            <p>
+                            我相信瑜珈不只是墊子上的練習，更是生活的藝術。我的教學風格溫柔且注重正位，致力於幫助學生在安全的練習中找到身體的自由。
+                            </p>
+                            <p>
+                            曾經我也是個深受背痛困擾的上班族，直到遇見瑜珈，我才學會如何與自己的身體對話。現在，我想把這份禮物分享給你。
+                            </p>
+                        </div>
+                        <div className="mt-8 flex gap-4">
+                            <Icons.Instagram className="cursor-pointer hover:text-emerald-400 transition" />
+                            <Icons.Facebook className="cursor-pointer hover:text-emerald-400 transition" />
+                            <Icons.Mail className="cursor-pointer hover:text-emerald-400 transition" />
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Testimonials */}
+                <section id="testimonials" className="py-20 bg-emerald-50/30">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 className="text-3xl font-bold text-center text-stone-800 mb-16">學員真實回饋</h2>
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {testimonials.map((item, i) => (
+                        <div key={i} className="bg-white p-8 rounded-2xl shadow-sm relative flex flex-col h-full">
+                            <div className="flex gap-1 text-yellow-400 mb-4">
+                            {[...Array(5)].map((_, k) => <Icons.Star key={k} size={16} />)}
+                            </div>
+                            <p className="text-stone-600 mb-6 italic leading-relaxed flex-grow">"{item.text}"</p>
+                            <div className="flex items-center gap-4 mt-auto">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-stone-200">
+                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-stone-800">{item.name}</p>
+                                <p className="text-xs text-stone-500">{item.role}</p>
+                            </div>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                    </div>
+                </section>
+
+                {/* Pricing Section */}
+                <section id="pricing" className="py-20 bg-white">
+                    <div className="max-w-3xl mx-auto px-4 text-center">
+                    <h2 className="text-3xl font-bold text-stone-800 mb-4">現在加入，給自己一個改變的機會</h2>
+                    <p className="text-stone-600 mb-12">投資健康是回報率最高的選擇。</p>
+
+                    <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-emerald-100 relative">
+                        <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wide">
+                        Limited Time Offer
+                        </div>
+                        <div className="p-8 md:p-12">
+                        <h3 className="text-2xl font-bold text-stone-800 mb-2">30 天舒壓瑜珈全套課程</h3>
+                        <p className="text-stone-500 mb-8">適合初學者與忙碌上班族的最佳方案</p>
+                        
+                        <div className="flex items-center justify-center gap-4 mb-8">
+                            <span className="text-stone-400 line-through text-xl">NT$ 6,000</span>
+                            <span className="text-5xl font-bold text-emerald-600">NT$ 1,680</span>
+                        </div>
+
+                        <div className="space-y-4 mb-10 text-left max-w-sm mx-auto">
+                            <div className="flex items-center gap-3">
+                            <div className="bg-emerald-100 p-1 rounded-full"><Icons.Check size={14} className="text-emerald-600" /></div>
+                            <span className="text-stone-700">完整 30 天線上瑜珈課程</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                            <div className="bg-emerald-100 p-1 rounded-full"><Icons.Check size={14} className="text-emerald-600" /></div>
+                            <span className="text-stone-700">永久回放權限，無限次觀看</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                            <div className="bg-emerald-100 p-1 rounded-full"><Icons.Check size={14} className="text-emerald-600" /></div>
+                            <span className="text-stone-700">🎁 贈送：睡前冥想引導音檔</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                            <div className="bg-emerald-100 p-1 rounded-full"><Icons.Check size={14} className="text-emerald-600" /></div>
+                            <span className="text-stone-700">🎁 贈送：課後動作糾正諮詢 1 次</span>
+                            </div>
+                        </div>
+
+                        <button className="w-full py-4 bg-emerald-600 text-white rounded-xl text-xl font-bold hover:bg-emerald-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                            立即購買課程
+                        </button>
+                        <p className="mt-4 text-xs text-stone-400">SSL 安全加密支付 • 7 天滿意保證</p>
+                        </div>
+                        <div className="bg-stone-50 p-4 text-sm text-stone-500">
+                        優惠倒數：僅剩 12 個名額
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* FAQ Section */}
+                <section className="py-20 bg-stone-50">
+                    <div className="max-w-3xl mx-auto px-4 sm:px-6">
+                    <h2 className="text-3xl font-bold text-center text-stone-800 mb-12">常見問題</h2>
+                    <div className="space-y-4">
+                        {faqs.map((faq, index) => (
+                        <div key={index} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                            <button 
+                            onClick={() => toggleAccordion(`faq-${index}`)}
+                            className="w-full flex items-center justify-between p-6 text-left"
+                            >
+                            <span className="font-bold text-stone-800 pr-8">{faq.q}</span>
+                            {activeAccordion === `faq-${index}` ? <Icons.ChevronUp className="flex-shrink-0 text-emerald-600" /> : <Icons.ChevronDown className="flex-shrink-0 text-stone-400" />}
+                            </button>
+                            {activeAccordion === `faq-${index}` && (
+                            <div className="px-6 pb-6 text-stone-600 leading-relaxed border-t border-stone-50 pt-4">
+                                {faq.a}
+                            </div>
+                            )}
+                        </div>
+                        ))}
+                    </div>
+                    </div>
+                </section>
+
+                {/* Footer */}
+                <footer className="bg-stone-900 text-stone-400 py-12 border-t border-stone-800">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-4 gap-8 mb-8">
+                        <div className="col-span-1 md:col-span-2">
+                        <span className="text-2xl font-bold text-white tracking-wider mb-4 block">YOGA.FLOW</span>
+                        <p className="max-w-xs">
+                            每天一點點的練習，累積成巨大的改變。讓我們陪你在瑜珈墊上找回最好的自己。
+                        </p>
+                        </div>
+                        <div>
+                        <h4 className="text-white font-bold mb-4">連結</h4>
+                        <ul className="space-y-2">
+                            <li><button onClick={() => scrollToSection('features')} className="hover:text-emerald-400 transition">關於課程</button></li>
+                            <li><button onClick={() => scrollToSection('curriculum')} className="hover:text-emerald-400 transition">課程大綱</button></li>
+                            <li><button onClick={() => scrollToSection('testimonials')} className="hover:text-emerald-400 transition">學員評價</button></li>
+                        </ul>
+                        </div>
+                        <div>
+                        <h4 className="text-white font-bold mb-4">聯絡我們</h4>
+                        <ul className="space-y-2">
+                            <li>hello@yogaflow.com</li>
+                            <li>LINE ID: @yogaflow</li>
+                        </ul>
+                        </div>
+                    </div>
+                    <div className="border-t border-stone-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm">
+                        <p>&copy; 2024 YOGA.FLOW All rights reserved.</p>
+                        <div className="flex gap-6 mt-4 md:mt-0">
+                        <a href="#" className="hover:text-white transition">隱私權政策</a>
+                        <a href="#" className="hover:text-white transition">服務條款</a>
+                        </div>
+                    </div>
+                    </div>
+                </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<YogaLandingPage />);
+    </script>
+</body>
+</html>
